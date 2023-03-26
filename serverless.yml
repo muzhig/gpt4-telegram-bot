@@ -1,0 +1,74 @@
+service: ${env:SERVICE_NAME}
+frameworkVersion: '3'
+useDotenv: true
+variablesResolutionMode: 20210326
+configValidationMode: error
+
+provider:
+  name: aws
+  profile: ${env:AWS_PROFILE, "default"}
+  region: ${env:AWS_REGION, "us-east-1"}
+  runtime: python3.9
+  lambdaHashingVersion: 20201221
+  memorySize: 128
+  environment:
+    TELEGRAM_BOT_TOKEN: ${env:TELEGRAM_BOT_TOKEN}
+    TELEGRAM_BOT_NAME: ${env:TELEGRAM_BOT_NAME}
+    SENTRY_DSN: ${env:SENTRY_DSN}
+    OPENAI_API_KEY: ${env:OPENAI_API_KEY}
+    STAGE: ${opt:stage, 'dev'}
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:Query
+            - dynamodb:Scan
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+            - dynamodb:BatchGetItem
+          Resource: "*"
+
+plugins:
+  - serverless-python-requirements
+package:
+  patterns:
+    - '!node_modules/**'
+    - '!package-lock.json'
+
+
+functions:
+  telegramWebhook:
+    handler: main.telegram_webhook_handler
+    events:
+      - http:
+          path: ${env:TELEGRAM_WEBHOOK_ENDPOINT, "/telegram"}
+          method: POST
+    reservedConcurrency: 1
+    timeout: 30
+
+resources: # CloudFormation template syntax from here on.
+  - Resources:
+      usersTable:
+        Type: AWS::DynamoDB::Table
+        Properties:
+          TableName: gpt4-tg-bot-messages
+          AttributeDefinitions:
+            - AttributeName: id
+              AttributeType: S
+          KeySchema:
+            - AttributeName: id
+              KeyType: HASH
+          ProvisionedThroughput:
+            ReadCapacityUnits: 4
+            WriteCapacityUnits: 2
+          TimeToLiveSpecification:
+            AttributeName: expires
+            Enabled: true
+
+
+custom:
+  pythonRequirements:
+    dockerizePip: true
