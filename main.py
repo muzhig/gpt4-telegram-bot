@@ -90,7 +90,7 @@ def telegram_webhook_handler(event: dict, context: dict) -> dict:
             msg.save()
 
             reply = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",
+                model="gpt-4",
                 messages=messages,
             )['choices'][0]['message']['content']
             msg = upd.message.reply_text(reply)
