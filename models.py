@@ -5,7 +5,7 @@ from pynamodb.models import Model
 class Messages(Model):
     class Meta:
         table_name = "gpt4-tg-bot-messages"
-    id = UnicodeAttribute(hash_key=True)  # email or phone number
+    id = UnicodeAttribute(hash_key=True)
     reply_to = UnicodeAttribute(null=True)
     thread_id = UnicodeAttribute(null=True)
     messages_in_thread = ListAttribute()
